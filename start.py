@@ -2,6 +2,8 @@ import pygame
 import os
 import sys
 import random
+import pygame_widgets
+from pygame_widgets.textbox import TextBox
 
 pygame.init()
 pygame.display.set_caption('Shooting practice')
@@ -13,6 +15,12 @@ results = []
 p = []
 cnt = 0
 colors = ["red", "blue"]
+trainings = ["Минимальный коэффицент разброса в тренировке точности", "Минимальное время реакции в тренировке точности",
+             "Максимальная скорость курсора в тренировке скорости", "Минимальное время реакции в тренировке скорости",
+             "Максимальная скорость шарика в тренировке с движущимися объектами",
+             "Минимальное количество промахов в тренировке с движущимися объектами",
+             "Минимальный коэффицент разброса в тренировке Убить Пакмана",
+             "Максимальное количество попаданий в тренировке Убить Пакмана"]
 last = 0
 
 
@@ -37,23 +45,86 @@ def load_image(name, colorkey=None):
     return image
 
 
-def start_screen():
-    intro_text = ["Выберите режим:",
-                  "Точность (нажмите 1 для выбора)",
-                  "Скорость (нажмите 2 для выбора)",
-                  "Тренироквка с движущимися объектами (нажмите 3 для выбора)",
-                  "Убить Пакмана (нажмите 4 для выбора)"]
+def load_prifile():
 
+    def hide():
+        screen.fill(pygame.Color("black"), (350, 600, 420, 50))
+
+    intro_text = ["Для создания нового профиля, введите ваше имя в это поле:",
+                  "Для входа в существующий профиль, введите ваше имя в это поле:"]
+    font = pygame.font.Font(None, 20)
+    text_coord = 325
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        intro_rect.top = text_coord
+        intro_rect.x = 100
+        text_coord += 100
+        screen.blit(string_rendered, intro_rect)
+    font = pygame.font.Font(None, 30)
+    textbox1 = TextBox(screen, 540, 310, 300, 50, fontSize=30, borderColour=(255, 0, 0), textColour=(0, 200, 0))
+    textbox2 = TextBox(screen, 580, 410, 300, 50, fontSize=30, borderColour=(255, 0, 0), textColour=(0, 200, 0))
+    last = ""
+    while True:
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                terminate()
+            if event.type == pygame.KEYDOWN:
+                if pygame.key.get_pressed()[pygame.K_RETURN]:
+                    name = textbox1.getText()
+                    if name != "":
+                        hide()
+                        if os.path.isfile(f"Profiles/{name}.txt"):
+                            string_rendered = font.render('Профиль с таким именем уже существует', 1,
+                                                          pygame.Color('white'))
+                            intro_rect = string_rendered.get_rect()
+                            intro_rect.top = 600
+                            intro_rect.x = 350
+                            screen.blit(string_rendered, intro_rect)
+                        else:
+                            my_file = open(f"Profiles/{name}.txt", mode="w", encoding="utf-8")
+                            for i in range(8):
+                                if i not in [2, 4, 7]:
+                                    my_file.write(f"{trainings[i]} = 100" + "\n")
+                                else:
+                                    my_file.write(f"{trainings[i]} = 0" + "\n")
+                            my_file.close()
+                            return name
+                    name = textbox2.getText()
+                    if name != "":
+                        if os.path.isfile(f"Profiles/{name}.txt"):
+                            return name
+                        else:
+                            if name != last:
+                                hide()
+                                last = name
+                                string_rendered = font.render('Профиля с таким именем нет', 1, pygame.Color('white'))
+                                intro_rect = string_rendered.get_rect()
+                                intro_rect.top = 600
+                                intro_rect.x = 450
+                                screen.blit(string_rendered, intro_rect)
+        pygame_widgets.update(events)
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+def start_screen():
+    intro_text = ["                                         Выберите режим:",
+                  "                        Точность (нажмите 1 для выбора)",
+                  "                        Скорость (нажмите 2 для выбора)",
+                  "Тренировка с движущимися объектами (нажмите 3 для выбора)",
+                  "                    Убить Пакмана (нажмите 4 для выбора)"]
     fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 30)
-    text_coord = 30
+    text_coord = 300
     for line in intro_text:
         string_rendered = font.render(line, 1, pygame.Color('white'))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
-        intro_rect.x = 500
+        intro_rect.x = 255
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
     while True:
@@ -88,8 +159,8 @@ def rule(screen, flag):
         txt = f.render("Для начала испытания нажмите правую кнопку мыши. Ваша цель - найти и убить"
                        " всех КРАСНЫХ Пакманов.", True, (0, 0, 0))
     else:
-        txt = f.render("Для начала испытания нажмите правую кнопку мыши. Ваша цель - убить Пакмана. Для достижения "
-                       "наилучшего результата, нажимайте как можно ближе к центру Пакмана", True, (0, 0, 0))
+        txt = f.render("Для начала испытания нажмите правую кнопку мыши. Ваша цель - нажимать как можно ближе и как"
+                       " можно быстрее к центру мишени", True, (0, 0, 0))
     r = txt.get_rect()
     r.top = 10
     r.x = 10
@@ -143,7 +214,7 @@ def resultats(screen):
     screen.blit(txt1, r)
 
 
-def chart(screen, type, sh, k_p, ed_p, y_pos):
+def chart(screen, type, sh, k_p, ed_p, y_pos, name, flag):
     image = pygame.Surface((1150, 260), pygame.SRCALPHA, 32)
     pygame.draw.polygon(image, (255, 0, 0), [(13, 242), (13, 0), (10, 4), (13, 0), (16, 4), (13, 0)], width=1)
     pygame.draw.polygon(image, (255, 0, 0), [(13, 242), (656, 242), (652, 245), (656, 242), (652, 239), (656, 242)],
@@ -167,7 +238,7 @@ def chart(screen, type, sh, k_p, ed_p, y_pos):
             elif type == "Скорость курсора":
                 ar_k.append(el[4])
                 ar_t.append(el[3])
-            elif type == "Скорость шарика":
+            elif type == "Скорость мишени":
                 ar_k.append(el[0])
                 ar_t.append(el[1])
             elif type == "Количество попаданий":
@@ -217,7 +288,7 @@ def chart(screen, type, sh, k_p, ed_p, y_pos):
             p[-1][1] = 30
         if ar_t[0] <= 30:
             pygame.draw.line(image, (0, 255, 0), (13, 242), (ar_t[0] * 21 + 13, 242 - ar_k[0] * ed_p))
-            for i in range(1, len(ar_k)):
+            for i in range(1, len(ar_t)):
                 if ar_t[i] <= 30:
                     pygame.draw.line(image, (0, 255, 0), (ar_t[i - 1] * 21 + 13, 242 - ar_k[i - 1] * ed_p),
                                      (ar_t[i] * 21 + 13, 242 - ar_k[i] * ed_p))
@@ -230,14 +301,17 @@ def chart(screen, type, sh, k_p, ed_p, y_pos):
         txt1 = f.render("График зависимости скорости курсора между попаданиями от времени", True, (255, 0, 0))
     elif type == "Количество промахов":
         txt1 = f.render("График зависимости количества промахов от времени", True, (255, 0, 0))
-    elif type == "Скорость шарика":
-        txt1 = f.render("График зависимости скорости шарика от времени", True, (255, 0, 0))
+    elif type == "Скорость мишени":
+        txt1 = f.render("График зависимости скорости мишени от времени", True, (255, 0, 0))
     elif type == "Количество попаданий":
         txt1 = f.render("График зависимости количества попаданий от времени", True, (255, 0, 0))
     r = txt1.get_rect()
     r.top = 0
     r.x = 656
     image.blit(txt1, r)
+    file = open(f"Profiles/{name}.txt", mode="r", encoding="utf-8")
+    lines = [line[:-1] for line in file]
+    file.close()
     f = pygame.font.Font(None, 15)
     if len(ar_k) != 0:
         if type == "Коэффицент разброса":
@@ -256,14 +330,18 @@ def chart(screen, type, sh, k_p, ed_p, y_pos):
             txt1 = f.render(f"Общее количество промахов"
                             f" = {ar_k[-1]}",
                             True, (255, 0, 0))
-        elif type == "Скорость шарика":
-            txt1 = f.render(f"Средняя скорость шарика"
+            if ar_k[-1] < float(lines[5].split()[-1]):
+                lines[5] = " ".join(lines[5].split()[:-1] + [str(ar_k[-1])])
+        elif type == "Скорость мишени":
+            txt1 = f.render(f"Средняя скорость мишени"
                             f" = {round(sum(ar_k) / len(ar_k), 2)}",
                             True, (255, 0, 0))
         elif type == "Количество попаданий":
             txt1 = f.render(f"Общее количество попаданий"
                             f" = {ar_k[-1]}",
                             True, (255, 0, 0))
+            if ar_k[-1] > float(lines[7].split()[-1]):
+                lines[7] = " ".join(lines[7].split()[:-1] + [str(ar_k[-1])])
     else:
         if type == "Коэффицент разброса":
             txt1 = f.render(f"Средний коэффицент разброса(с учётом промахов) = 0", True, (255, 0, 0))
@@ -273,8 +351,8 @@ def chart(screen, type, sh, k_p, ed_p, y_pos):
             txt1 = f.render(f"Средняя скорость курсора между попаданиями = 0", True, (255, 0, 0))
         elif type == "Количество промахов":
             txt1 = f.render(f"Количество промахов = 0", True, (255, 0, 0))
-        elif type == "Скорость шарика":
-            txt1 = f.render(f"Средняя скорость шарика = 0", True, (255, 0, 0))
+        elif type == "Скорость мишени":
+            txt1 = f.render(f"Средняя скорость мишени = 0", True, (255, 0, 0))
         elif type == "Количество попаданий":
             txt1 = f.render(f"Итоговое количество попаданий = 0", True, (255, 0, 0))
     r = txt1.get_rect()
@@ -288,18 +366,30 @@ def chart(screen, type, sh, k_p, ed_p, y_pos):
         if type == "Коэффицент разброса":
             txt1 = f.render(f"Максимальный коэфф. = {round(max(ar_k), 2)}, минимальный коэфф. = {round(min(ar_k), 2)}",
                             True, (255, 0, 0))
+            if round(min(ar_k), 2) < float(lines[0].split()[-1]) and flag == "accuracy":
+                lines[0] = " ".join(lines[0].split()[:-1] + [str(round(min(ar_k), 2))])
+            if round(min(ar_k), 2) < float(lines[6].split()[-1]) and flag == "Kill Pacman":
+                lines[6] = " ".join(lines[6].split()[:-1] + [str(round(min(ar_k), 2))])
         elif type == "Время реакции":
             txt1 = f.render(f"Максимальное вр.реакц. = {round(max(ar_k), 2)},"
                             f" минимальное вр.реакц. = {round(min(ar_k), 2)}",
                             True, (255, 0, 0))
+            if round(min(ar_k), 2) < float(lines[1].split()[-1]) and flag == "accuracy":
+                lines[1] = " ".join(lines[1].split()[:-1] + [str(round(min(ar_k), 2))])
+            if round(min(ar_k), 2) < float(lines[3].split()[-1]) and flag == "speed":
+                lines[3] = " ".join(lines[3].split()[:-1] + [str(round(min(ar_k), 2))])
         elif type == "Скорость курсора":
             txt1 = f.render(f"Максимальная ск.курс. = {round(max(ar_k), 2)},"
                             f" минимальная ск.курс. = {round(min(ar_k), 2)}",
                             True, (255, 0, 0))
-        elif type == "Скорость шарика":
-            txt1 = f.render(f"Максимальная ск.шарика = {round(max(ar_k), 2)},"
-                            f" минимальная ск.шарика. = {round(min(ar_k), 2)}",
+            if round(max(ar_k), 2) > float(lines[2].split()[-1]):
+                lines[2] = " ".join(lines[2].split()[:-1] + [str(round(max(ar_k), 2))])
+        elif type == "Скорость мишени":
+            txt1 = f.render(f"Максимальная ск.мишени = {round(max(ar_k), 2)},"
+                            f" минимальная ск.мишени. = {round(min(ar_k), 2)}",
                             True, (255, 0, 0))
+            if round(max(ar_k), 2) > float(lines[4].split()[-1]):
+                lines[4] = " ".join(lines[4].split()[:-1] + [str(round(max(ar_k), 2))])
     else:
         if type == "Коэффицент разброса":
             txt1 = f.render(f"Максимальный коэфф. = 0, минимальный коэфф. = 0",
@@ -310,33 +400,38 @@ def chart(screen, type, sh, k_p, ed_p, y_pos):
         elif type == "Скорость курсора":
             txt1 = f.render(f"Максимальная ск.курс. = 0, минимальная ск.кур. = 0",
                             True, (255, 0, 0))
-        elif type == "Скорость шарика":
-            txt1 = f.render(f"Максимальная ск.шарика. = 0, минимальная ск.шарика. = 0",
+        elif type == "Скорость мишени":
+            txt1 = f.render(f"Максимальная ск.мишени. = 0, минимальная ск.мишени. = 0",
                             True, (255, 0, 0))
     r = txt1.get_rect()
     r.top = 30
     r.x = 656
     image.blit(txt1, r)
     screen.blit(image, (10, y_pos))
+    file = open(f"Profiles/{name}.txt", mode="w", encoding="utf-8").close()
+    file = open(f"Profiles/{name}.txt", mode="w", encoding="utf-8")
+    for elem in lines:
+        file.write(f"{elem}" + "\n")
+    file.close()
 
 
-def print_results(screen, flag):
+def print_results(screen, flag, name):
     if flag == "accuracy":
         pygame.display.set_caption('accuracy')
-        chart(screen, "Коэффицент разброса", 12, 5, 2.42, 100)
-        chart(screen, "Время реакции", 24, 3, 8, 400)
+        chart(screen, "Коэффицент разброса", 12, 5, 2.42, 100, name, flag)
+        chart(screen, "Время реакции", 24, 3, 8, 400, name, flag)
     elif flag == "speed":
         pygame.display.set_caption('speed')
-        chart(screen, "Скорость курсора", 24, 100, 0.242, 100)
-        chart(screen, "Время реакции", 24, 3, 8, 400)
+        chart(screen, "Скорость курсора", 24, 100, 0.242, 100, name, flag)
+        chart(screen, "Время реакции", 24, 1, 24, 400, name, flag)
     elif flag == "moving targets":
         pygame.display.set_caption('moving targets')
-        chart(screen, "Скорость шарика", 24, 1, 24, 100)
-        chart(screen, "Количество промахов", 24, 20, (242 / 200), 400)
-    else:
-        pygame.display.set_caption("Kill Packman")
-        chart(screen, "Коэффицент разброса Пакман", 12, 5, 2.42, 100)
-        chart(screen, "Количество попаданий", 24, 1, 24, 400)
+        chart(screen, "Скорость мишени", 24, 2, 12, 100, name, flag)
+        chart(screen, "Количество промахов", 24, 20, (242 / 200), 400, name, flag)
+    elif flag == "Kill Pacman":
+        pygame.display.set_caption("Kill Pacman")
+        chart(screen, "Коэффицент разброса Пакман", 12, 5, 2.42, 100, name, flag)
+        chart(screen, "Количество попаданий", 24, 1, 24, 400, name, flag)
 
 
 all_sprites = pygame.sprite.Group()
@@ -419,13 +514,13 @@ class AnimatedSprite(pygame.sprite.Sprite):
                     self.xp -= 10
                     if abs(self.vx) < 30:
                         if self.vx <= 0:
-                            self.vx -= 2.5
+                            self.vx -= 2
                         else:
-                            self.vx += 2.5
+                            self.vx += 2
                         if self.vy <= 0:
-                            self.vy -= 2.5
+                            self.vy -= 2
                         else:
-                            self.vy += 2.5
+                            self.vy += 2
                 results.append((abs(self.rect.x + self.delta_y - coords[0]),
                                 abs(self.rect.top + self.delta_y - coords[1]),
                                 (pygame.time.get_ticks() - start_time) / 1000,
@@ -527,14 +622,15 @@ class Moving_ball(pygame.sprite.Sprite):
             results.append(((self.vx ** 2 + self.vy ** 2) ** 0.5,
                             (pygame.time.get_ticks() - start_time) / 1000))
             self.time = (pygame.time.get_ticks() - start_time) / 1000
+            h = random.random()
             if self.vx <= 0:
-                self.vx = (-1) * (self.vx - 0.35)
+                self.vx = random.choice((-1, 1)) * (self.vx - h)
             else:
-                self.vx = (-1) * (self.vx + 0.35)
+                self.vx = random.choice((-1, 1)) * (self.vx + h)
             if self.vy <= 0:
-                self.vy = (-1) * (self.vy - 0.35)
+                self.vy = random.choice((-1, 1)) * (self.vy - ((1 - h ** 2) ** 0.5))
             else:
-                self.vy = (-1) * (self.vy + 0.35)
+                self.vy = random.choice((-1, 1)) * (self.vy + ((1 - h ** 2) ** 0.5))
         else:
             self.cnt += 1
             p.append([self.cnt, (pygame.time.get_ticks() - start_time) / 1000])
@@ -570,6 +666,7 @@ class Target(pygame.sprite.Sprite):
 
 if __name__ == '__main__':
     screen = pygame.display.set_mode(size)
+    name = load_prifile()
     flag = start_screen()
     if flag == "accuracy":
         pygame.display.set_caption('accuracy')
@@ -664,7 +761,7 @@ if __name__ == '__main__':
             for elem in moving_sprites:
                 elem.kill()
             resultats(screen)
-            print_results(screen, flag)
+            print_results(screen, flag, name)
         if key == 3:
             flag = start_screen()
             if flag == "accuracy":
